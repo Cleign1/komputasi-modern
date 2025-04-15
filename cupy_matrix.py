@@ -7,7 +7,7 @@ import subprocess
 import matplotlib.pyplot as plt
 
 # Definisikan dimensi matriks yang akan diuji
-dimensi_gpu = [8, 16, 32, 64, 128, 256, 512, 1024, 4096]
+dimensi_gpu = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096]
 
 # Buat folder untuk menyimpan hasil
 os.makedirs("matrix_results", exist_ok=True)
