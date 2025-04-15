@@ -3,141 +3,180 @@ import time
 import os
 import json
 import psutil
+import matplotlib.pyplot as plt
 
-# Define dimensions with additional large sizes to try
-dimensi = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
-# Very large dimensions that might fail - will only try these if others succeed
-very_large_dimensi = [32768, 65536]
+# definisikan dimensi matriks yang akan diuji
+dimensi = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096]
+# dimensi_sangat_besar = [8192, 16384, 32768, 65536, 131072, 262144]
 
-# Create directory to save results if it doesn't exist
-os.makedirs("matrix_results", exist_ok=True)
+# buat folder untuk menyimpan hasil
+os.makedirs("hasil_matriks", exist_ok=True)
 
-# Dictionary to store execution times
-numpy_times_dict = {}
+# buat dictionary untuk menyimpan waktu eksekusi
+waktu_numpy_dict = {}
+waktu_perkalian_numpy_dict = {}
 
-# Get system memory information
-mem_info = psutil.virtual_memory()
-print(f"System memory information:")
-print(f"Total RAM: {mem_info.total / (1024**3):.2f} GB")
-print(f"Available RAM: {mem_info.available / (1024**3):.2f} GB")
-print(f"Percent used: {mem_info.percent}%")
+# Ambil informasi memori dari sistem
+print("\n--- Informasi Sistem ---")
+info_memori = psutil.virtual_memory()
+print(f"Total RAM: {info_memori.total / (1024**3):.2f} GB")
+print(f"RAM Tersedia: {info_memori.available / (1024**3):.2f} GB")
+print(f"Persentase Terpakai: {info_memori.percent}%")
 
-print("\nStarting NumPy matrix generation...")
+print("\n--- Memulai Pembuatan Matriks ---")
 
-# Function to check if we have enough memory for the array
-def check_memory_available(dim):
-    # Calculate required memory in bytes (8 bytes per int64)
-    required_bytes = dim * dim * 8
+# fungsi untuk memeriksa apakah memori cukup tersedia
+def periksa_memori_tersedia(dim):
+    # Kita membutuhkan memori untuk dua matriks input dan satu matriks output
+    memori_dibutuhkan = 3 * dim * dim * 8
     
-    # Get available memory
-    available_bytes = psutil.virtual_memory().available
+    memori_tersedia = psutil.virtual_memory().available
     
-    # Use only 80% of available memory as safety margin
-    safe_available = available_bytes * 0.95
+    memori_aman = memori_tersedia * 0.95
     
-    sufficient_memory = required_bytes <= safe_available
+    memori_cukup = memori_dibutuhkan <= memori_aman
     
-    print(f"Matrix size: {dim}x{dim} requires {required_bytes / (1024**3):.2f} GB")
-    print(f"Available memory: {available_bytes / (1024**3):.2f} GB (using 95%: {safe_available / (1024**3):.2f} GB)")
-    print(f"Memory sufficient: {sufficient_memory}")
+    print(f"Matriks Ukuran: {dim}x{dim} Membutuhkan {memori_dibutuhkan / (1024**3):.2f} GB untuk perkalian")
+    print(f"Memori Tersedia: {memori_tersedia / (1024**3):.2f} GB (menggunakan 95%: {memori_aman / (1024**3):.2f} GB)")
+    print(f"Memori Cukup: {memori_cukup}")
     
-    return sufficient_memory
+    return memori_cukup
 
-# Function to generate numpy matrix and measure time
-def generate_numpy_matrix(dim):
-    # Check if we have enough memory first
-    if not check_memory_available(dim):
-        print(f"Not enough memory for {dim}x{dim} matrix. Skipping.")
+# Fungsi untuk membuat matriks numpy dan mengukur waktu
+def buat_matriks_numpy(dim):
+    # Periksa apakah memori cukup tersedia terlebih dahulu
+    if not periksa_memori_tersedia(dim):
+        print(f"Memori tidak cukup untuk matriks {dim}x{dim}. Melewati.")
         return None, 0
     
     try:
-        start_time = time.time()
-        matrix = np.random.randint(1, 101, size=(dim, dim))
-        end_time = time.time()
-        execution_time = end_time - start_time
-        print(f"NumPy {dim}x{dim} matrix generated in {execution_time:.6f} seconds")
-        return matrix, execution_time
-    except (MemoryError, np._core._exceptions._ArrayMemoryError) as e:
-        print(f"Memory error while allocating {dim}x{dim} matrix: {str(e)}")
+        waktu_mulai = time.time()
+        matriks = np.random.randint(1, 101, size=(dim, dim))
+        waktu_selesai = time.time()
+        waktu_eksekusi = waktu_selesai - waktu_mulai
+        print(f"NumPy {dim}x{dim} dibuat dalam {waktu_eksekusi:.6f} detik")
+        return matriks, waktu_eksekusi
+    except (MemoryError, np.core._exceptions._ArrayMemoryError) as e:
+        print(f"Kesalahan memori saat membuat matriks {dim}x{dim}: {str(e)}")
         return None, 0
     except Exception as e:
-        print(f"Unexpected error while allocating {dim}x{dim} matrix: {str(e)}")
+        print(f"Kesalahan tak terduga saat membuat matriks {dim}x{dim}: {str(e)}")
         return None, 0
 
-# Track if any failures occur to stop trying larger sizes
-had_memory_failure = False
+# Fungsi untuk melakukan perkalian matriks dan mengukur waktu
+def perkalian_matriks_numpy(matriks_a, matriks_b):
+    try:
+        waktu_mulai = time.time()
+        hasil = np.matmul(matriks_a, matriks_b)
+        waktu_selesai = time.time()
+        waktu_eksekusi = waktu_selesai - waktu_mulai
+        return hasil, waktu_eksekusi
+    except Exception as e:
+        print(f"Kesalahan selama perkalian matriks: {str(e)}")
+        return None, 0
 
-# Generate NumPy matrices for standard dimensions
+# Lacak apakah ada kegagalan memori untuk menghentikan percobaan ukuran yang lebih besar
+gagal_memori = False
+
+# buat matriks untuk ukuran yang lebih kecil
 for dim in dimensi:
-    print(f"\nGenerating {dim}x{dim} NumPy matrix...")
+    print(f"\nMembuat dan mengalikan matriks NumPy {dim}x{dim}...")
     
-    # Generate NumPy matrix
-    np_matrix, np_time = generate_numpy_matrix(dim)
+    # Buat matriks NumPy pertama
+    matriks_numpy_a, waktu_buat_a = buat_matriks_numpy(dim)
     
-    if np_matrix is not None:
-        numpy_times_dict[dim] = np_time
+    if matriks_numpy_a is not None:
+        # Buat matriks NumPy kedua
+        matriks_numpy_b, waktu_buat_b = buat_matriks_numpy(dim)
         
-        # Save a sample of the NumPy matrix
-        with open(f"matrix_results/numpy_matrix_{dim}x{dim}_sample.txt", "w") as f:
-            f.write(f"NumPy Random Matrix {dim}x{dim} (showing first 10x10 elements):\n")
-            sample_size = min(10, dim)
-            for i in range(sample_size):
-                f.write(" ".join(map(str, np_matrix[i, :sample_size])) + "\n")
-        
-        # Free memory explicitly
-        del np_matrix
-        import gc
-        gc.collect()
-        
-        # Report memory after each large matrix
-        if dim >= 1024:
-            mem_info = psutil.virtual_memory()
-            print(f"Available RAM after cleanup: {mem_info.available / (1024**3):.2f} GB")
-    else:
-        had_memory_failure = True
-        break
-
-# Try very large dimensions only if all previous ones succeeded
-if not had_memory_failure:
-    for dim in very_large_dimensi:
-        print(f"\nAttempting to generate very large {dim}x{dim} NumPy matrix...")
-        
-        # Generate NumPy matrix
-        np_matrix, np_time = generate_numpy_matrix(dim)
-        
-        if np_matrix is not None:
-            numpy_times_dict[dim] = np_time
+        if matriks_numpy_b is not None:
+            waktu_numpy_dict[dim] = waktu_buat_a + waktu_buat_b
             
-            # Save a sample of the NumPy matrix
-            with open(f"matrix_results/numpy_matrix_{dim}x{dim}_sample.txt", "w") as f:
-                f.write(f"NumPy Random Matrix {dim}x{dim} (showing first 10x10 elements):\n")
-                sample_size = min(10, dim)
-                for i in range(sample_size):
-                    f.write(" ".join(map(str, np_matrix[i, :sample_size])) + "\n")
+            # Lakukan perkalian matriks
+            print(f"Mengalikan matriks {dim}x{dim}...")
+            hasil, waktu_perkalian = perkalian_matriks_numpy(matriks_numpy_a, matriks_numpy_b)
             
-            # Free memory explicitly
-            del np_matrix
+            if hasil is not None:
+                waktu_perkalian_numpy_dict[dim] = waktu_perkalian
+                print(f"Perkalian matriks {dim}x{dim} selesai dalam {waktu_perkalian:.6f} detik")
+                
+                # Simpan contoh hasil matriks
+                with open(f"hasil_matriks/hasil_perkalian_numpy_{dim}x{dim}_contoh.txt", "w") as f:
+                    f.write(f"Hasil Perkalian NumPy {dim}x{dim} (menampilkan elemen 5x5 pertama):\n")
+                    ukuran_contoh = min(5, dim)
+                    for i in range(ukuran_contoh):
+                        f.write(" ".join(map(str, hasil[i, :ukuran_contoh])) + "\n")
+            
+            # Bebaskan memori secara eksplisit
+            del matriks_numpy_a, matriks_numpy_b
+            if hasil is not None:
+                del hasil
             import gc
             gc.collect()
             
-            # Report memory after each matrix
-            mem_info = psutil.virtual_memory()
-            print(f"Available RAM after cleanup: {mem_info.available / (1024**3):.2f} GB")
+            # Laporkan memori setelah setiap matriks besar
+            if dim >= 1024:
+                info_memori = psutil.virtual_memory()
+                print(f"RAM Tersedia setelah dibersihkan: {info_memori.available / (1024**3):.2f} GB")
         else:
-            print(f"Skipping remaining very large dimensions")
+            gagal_memori = True
             break
+    else:
+        gagal_memori = True
+        break
 
-# Save timing results to a JSON file
-with open("matrix_results/numpy_times.json", "w") as f:
-    json.dump(numpy_times_dict, f)
+# Simpan hasil waktu ke file JSON
+with open("hasil_matriks/waktu_pembuatan_numpy.json", "w") as f:
+    json.dump(waktu_numpy_dict, f)
 
-print("\nNumPy matrix generation completed.")
-print(f"Results saved to matrix_results/numpy_times.json")
+with open("hasil_matriks/waktu_perkalian_numpy.json", "w") as f:
+    json.dump(waktu_perkalian_numpy_dict, f)
 
-# Print summary
-print("\nNumPy Summary:")
+print("\nPembuatan dan perkalian matriks NumPy selesai.")
+print(f"Hasil disimpan di hasil_matriks/waktu_pembuatan_numpy.json dan hasil_matriks/waktu_perkalian_numpy.json")
+
+# Cetak ringkasan
+print("\nRingkasan Pembuatan NumPy:")
 print("=" * 50)
-print(f"{'Dimension':<10} {'Time (seconds)':<15}")
+print(f"{'Dimensi':<10} {'Waktu (detik)':<15}")
 print("-" * 50)
-for dim in sorted(numpy_times_dict.keys()):
-    print(f"{dim:<10} {numpy_times_dict[dim]:<15.6f}")
+for dim in sorted(waktu_numpy_dict.keys()):
+    print(f"{dim:<10} {waktu_numpy_dict[dim]:<15.6f}")
+
+print("\nRingkasan Perkalian NumPy:")
+print("=" * 50)
+print(f"{'Dimensi':<10} {'Waktu (detik)':<15}")
+print("-" * 50)
+for dim in sorted(waktu_perkalian_numpy_dict.keys()):
+    print(f"{dim:<10} {waktu_perkalian_numpy_dict[dim]:<15.6f}")
+
+# Buat visualisasi menggunakan matplotlib
+plt.figure(figsize=(12, 8))
+
+# Plot waktu perkalian matriks
+plt.subplot(2, 1, 1)
+dimensi_sorted = sorted(waktu_perkalian_numpy_dict.keys())
+waktu = [waktu_perkalian_numpy_dict[dim] for dim in dimensi_sorted]
+plt.plot(dimensi_sorted, waktu, 'o-', color='blue', linewidth=2, markersize=8)
+plt.title('Performa Perkalian Matriks NumPy', fontsize=14)
+plt.xlabel('Dimensi Matriks', fontsize=12)
+plt.ylabel('Waktu (detik)', fontsize=12)
+plt.grid(True)
+plt.xscale('log', base=2)
+plt.yscale('log')
+
+# Plot waktu pembuatan matriks
+plt.subplot(2, 1, 2)
+dimensi_sorted = sorted(waktu_numpy_dict.keys())
+waktu = [waktu_numpy_dict[dim] for dim in dimensi_sorted]
+plt.plot(dimensi_sorted, waktu, 'o-', color='green', linewidth=2, markersize=8)
+plt.title('Performa Pembuatan Matriks NumPy', fontsize=14)
+plt.xlabel('Dimensi Matriks', fontsize=12)
+plt.ylabel('Waktu (detik)', fontsize=12)
+plt.grid(True)
+plt.xscale('log', base=2)
+plt.yscale('log')
+
+plt.tight_layout()
+plt.savefig('hasil_matriks/performa_matriks_numpy.png')
+print("Visualisasi performa disimpan di 'hasil_matriks/performa_matriks_numpy.png'")
