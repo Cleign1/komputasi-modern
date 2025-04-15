@@ -13,15 +13,9 @@ ca-certificates=2025.1.31=hbcca054_0
 cairo=1.18.4=h3394656_0
 comm=0.2.2=pyhd8ed1ab_1
 contourpy=1.3.1=py313h33d0bda_0
-cuda-cccl_linux-64=12.4.127=ha770c72_2
-cuda-cudart-dev_linux-64=12.4.127=h85509e4_2
-cuda-cudart-static_linux-64=12.4.127=h85509e4_2
-cuda-cudart_linux-64=12.4.127=h85509e4_2
 cuda-nvrtc=12.4.127=he02047a_2
 cuda-version=12.4=h3060b56_3
 cudnn=9.8.0.87=h81d5506_1
-cupy=13.4.1=py313hdf5e20e_0
-cupy-core=13.4.1=py313h2626f57_0
 cupy-cuda12x=13.4.1=pypi_0
 cutensor=2.2.0.0=h2b4c902_0
 cycler=0.12.1=pyhd8ed1ab_1
@@ -33,7 +27,6 @@ double-conversion=3.3.1=h5888daf_0
 exceptiongroup=1.2.2=pyhd8ed1ab_1
 executing=2.1.0=pyhd8ed1ab_1
 expat=2.7.0=h5888daf_0
-fastrlock=0.8.3=py313h9800cb9_1
 font-ttf-dejavu-sans-mono=2.37=hab24e00_0
 font-ttf-inconsolata=3.000=h77eed37_0
 font-ttf-source-code-pro=2.038=h77eed37_0
@@ -67,11 +60,7 @@ libcblas=3.9.0=31_he106b2a_openblas
 libclang-cpp20.1=20.1.2=default_hb5137d0_0
 libclang13=20.1.2=default_h9c6a7e4_0
 libcublas=12.4.5.8=he02047a_2
-libcufft=11.2.1.3=he02047a_2
 libcups=2.3.3=h4637d8d_4
-libcurand=10.3.5.147=he02047a_2
-libcusolver=11.6.1.9=he02047a_2
-libcusparse=12.3.1.170=he02047a_2
 libdeflate=1.23=h4ddbbb0_0
 libdrm=2.4.124=hb9d3cd8_0
 libedit=3.1.20250104=pl5321h7949ede_0
@@ -94,7 +83,6 @@ libllvm20=20.1.2=ha7bfdaf_0
 liblzma=5.8.1=hb9d3cd8_0
 libmpdec=4.0.0=h4bc722e_0
 libntlm=1.8=hb9d3cd8_0
-libnvjitlink=12.4.127=he02047a_2
 libopenblas=0.3.29=pthreads_h94d23a6_0
 libopengl=1.7.0=ha4b6fd6_2
 libpciaccess=0.18=hd590300_0
